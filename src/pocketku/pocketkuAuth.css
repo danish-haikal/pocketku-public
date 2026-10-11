@@ -1,0 +1,9 @@
+.pk-auth-page{min-height:100vh;display:grid;place-items:center;background:#f3eefb;padding:24px;color:#281d38;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.pk-auth-card{width:100%;max-width:420px;padding:32px;background:#fff;border:1px solid #e3dbea;border-radius:22px;box-shadow:0 18px 50px rgba(68,42,95,.12)}
+.pk-auth-icon{background:#7650a3;color:white;width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:27px;margin-bottom:10px}
+.pk-auth-card h1{font-size:31px;margin:0}.pk-auth-card h1 span{color:#7650a3}
+.pk-auth-tagline{font-size:13px;color:#6c6076;margin:4px 0 30px}.pk-auth-card h2{font-size:20px;margin:0 0 22px}
+.pk-auth-card label{font-size:13px;display:block;font-weight:600;margin-bottom:6px}
+.pk-auth-card input{display:block;width:100%;box-sizing:border-box;padding:12px 14px;font:inherit;color:#281d38;background:white;border-radius:10px;border:1px solid #d1c8da;margin-bottom:17px;outline-color:#7650a3}
+.pk-auth-card button{width:100%;border:0;border-radius:11px;padding:13px;color:white;background:#7650a3;font:inherit;font-weight:700;cursor:pointer}.pk-auth-card button:disabled{opacity:.55;cursor:wait}
+.pk-auth-help{margin:16px 0 0;text-align:center;color:#756b7d;font-size:12px}.pk-auth-error{color:#9a2323;background:#fff2f2;border:1px solid #f4b7b7;padding:12px;border-radius:10px;font-size:13px;overflow-wrap:anywhere}

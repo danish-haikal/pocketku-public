@@ -1,0 +1,101 @@
+/* Step 7.18.2: clear planner cards, readability and stable interaction. */
+.pk-d1planner { padding:20px; margin-bottom:16px; }
+.pk-d1planner, .pk-d1planner input, .pk-d1planner select, .pk-d1planner button { font-family:'DM Sans',Inter,system-ui,sans-serif; }
+.pk-d1planner .pk-btn { font-size:13px; padding:10px 14px; }
+.pk-d1planner .pk-mini-link { font-size:12px; }
+.pk-d1-header {display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:19px}
+.pk-d1-overline {font-size:11px;color:var(--accent);letter-spacing:1.2px;font-weight:800;margin-bottom:4px}
+.pk-d1-header h2 {font-size:21px;margin:0 0 5px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;letter-spacing:-.4px}
+.pk-d1-header p {font-size:13px;line-height:1.5;color:var(--muted);margin:0}
+.pk-d1-save-indicator {font-size:11px;color:var(--muted);font-weight:650;letter-spacing:0;background:var(--purplelight);border-radius:30px;padding:5px 9px}
+.pk-d1-overview {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-bottom:14px}
+.pk-d1-overview>div {border:1px solid var(--border);border-radius:11px;padding:14px;background:var(--surface);display:flex;flex-direction:column;gap:3px}
+.pk-d1-overview small {font-size:12px;color:var(--muted)}
+.pk-d1-overview strong {font-size:21px;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.pk-d1-overview span {font-size:11px;color:var(--muted)}
+.pk-d1-explainer {display:flex;gap:10px 19px;align-items:center;flex-wrap:wrap;padding:12px 13px;background:var(--purplelight);border-radius:10px;font-size:12px;margin-bottom:14px}
+.pk-d1-explainer strong {color:var(--ink);font-weight:800}
+.pk-d1-explainer span {color:var(--ink)}
+.pk-d1-explainer b {color:var(--accent)}
+.pk-d1-actions {display:flex;gap:9px;flex-wrap:wrap;margin-bottom:17px}
+.pk-d1-alert {border:1px solid var(--border);background:var(--purplelight);padding:11px 13px;border-radius:10px;font-size:13px;margin-bottom:13px}
+.pk-d1-error {background:var(--surface);color:#ae404d;border-color:#e2a3a7}
+.pk-d1-toolbar {display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:5;background:var(--surface);padding:12px;border:1px solid var(--border);border-radius:11px;margin:0 0 13px;box-shadow:0 4px 15px rgba(24,13,34,.05)}
+.pk-d1-toolbar label {color:var(--muted);font-weight:700;font-size:12px;display:flex;flex-direction:column;gap:4px}
+.pk-d1-searchlabel {flex:2 1 220px}
+.pk-d1-filterlabel {flex:1 1 170px;max-width:230px}
+.pk-d1-toolbar .pk-input {font-size:13px;padding:9px 11px}
+.pk-d1-resultcount {font-size:12px;color:var(--muted);align-self:center;margin-left:auto;white-space:nowrap}
+.pk-d1-empty {border:1px dashed var(--border);padding:28px;text-align:center;font-size:14px;color:var(--muted);border-radius:12px}
+.pk-d1-list {display:flex;flex-direction:column;gap:12px}
+.pk-d1-item {background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:17px 18px;scroll-margin-top:90px;transition:border-color .16s ease, box-shadow .16s ease}
+.pk-d1-item.pk-d1-recent {border-color:var(--accent);box-shadow:0 0 0 2px var(--purplelight)}
+.pk-d1-itemhead {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px}
+.pk-d1-itemidentity {min-width:0}
+.pk-d1-itemtitle {font-size:16px;font-weight:800;line-height:1.4;color:var(--ink);overflow-wrap:anywhere}
+.pk-d1-installment {font-size:11px;color:var(--accent);background:var(--purplelight);border-radius:6px;padding:3px 7px;margin-left:7px;font-weight:750;white-space:nowrap}
+.pk-d1-meta {display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:7px}
+.pk-d1-status {font-weight:750;font-size:11px;border-radius:40px;padding:3px 8px;border:1px solid var(--border)}
+.pk-d1-status.pk-d1-unallocated {color:var(--muted);background:var(--bg)}
+.pk-d1-status.pk-d1-reserved {background:var(--purplelight);color:var(--accent);border-color:transparent}
+.pk-d1-status.pk-d1-paid {background:#e0f2e9;color:#166c50;border-color:transparent}
+.pk-d1-amount {font-size:19px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pk-d1-funding {background:var(--bg);border-radius:10px;padding:14px;margin:2px 0 12px}
+.pk-d1-fundinghead {display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.pk-d1-fundinghead span {font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.pk-d1-muted {color:var(--muted);font-weight:550}
+.pk-d1-progress {height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin:10px 0}
+.pk-d1-progress>div {height:100%;background:var(--accent);border-radius:inherit;transition:width .15s ease}
+.pk-d1-nofunding {font-size:12px;color:var(--muted);margin:9px 0}
+.pk-d1-source-list {padding:0;list-style:none;margin:9px 0 3px}
+.pk-d1-source-list li {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.pk-d1-source-list li:last-child {border-bottom:0}
+.pk-d1-source-list li>span {min-width:0;overflow-wrap:anywhere}
+.pk-d1-source-list li>div {display:flex;align-items:center;gap:8px;white-space:nowrap}
+.pk-d1-source-list em {display:inline-block;margin-left:7px;font-size:10px;font-style:normal;color:var(--accent);border:1px solid var(--accent);padding:2px 6px;border-radius:8px}
+.pk-d1-fundinghint {font-size:12px;color:var(--muted);margin:8px 0 4px}
+.pk-d1-fundinghint.pk-d1-ready {color:#23816a;font-weight:800}
+.pk-d1-addsource {background:transparent;border:0;color:var(--accent);font-size:12px;font-weight:800;padding:6px 0;margin:2px 0;cursor:pointer}
+.pk-d1-addsource:hover {text-decoration:underline}
+.pk-d1-addform {display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-top:8px;padding-top:10px;border-top:1px solid var(--border)}
+.pk-d1-addform label {display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:750;flex:1 1 180px;color:var(--ink)}
+.pk-d1-addform label:nth-child(2) {flex:0 1 148px}
+.pk-d1-addform .pk-input {font-size:13px;padding:9px 10px}
+.pk-d1-inline-error {font-size:12px;line-height:1.5;color:#ad424e;margin:7px 0 12px}
+.pk-d1-updated {color:var(--accent);font-size:12px;font-weight:750;display:block;margin:8px 0}
+.pk-d1-itemactions {display:flex;align-items:center;gap:9px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px}
+.pk-d1-actionspacer {flex:1}
+.pk-d1-paidnote {font-size:12px;font-weight:700;color:#23816a}
+.pk-d1-footnote {font-size:12px;color:var(--muted);line-height:1.6;margin:15px 0 0}
+.pk-d1-editmodal .pk-row h2 {margin:0}
+.pk-d1-editmodal .pk-two {margin-top:11px}
+.pk-d1-editactions {grid-column:1/-1;display:flex;justify-content:flex-end;gap:9px;align-items:center;margin-top:7px}
+@media(max-width:640px) {
+ .pk-d1planner {padding:13px}
+ .pk-d1-header h2 {font-size:18px}
+ .pk-d1-overview {gap:7px}
+ .pk-d1-overview>div {padding:9px}
+ .pk-d1-overview strong {font-size:15px}
+ .pk-d1-overview small,.pk-d1-overview span {font-size:10px}
+ .pk-d1-item {padding:13px}
+ .pk-d1-itemtitle {font-size:15px}
+ .pk-d1-amount {font-size:16px}
+ .pk-d1-filterlabel {max-width:none}
+ .pk-d1-addform label:nth-child(2) {flex:1 1 130px}
+ .pk-d1-addform button {width:100%}
+ .pk-d1-source-list li {align-items:flex-start}
+ .pk-d1-toolbar {top:0}
+ .pk-d1-editmodal .pk-two {grid-template-columns:1fr}
+}
+
+/* Step 7.20.1: separate loan connection from actual bank funding. */
+.pk-d1-debtconnection{margin:12px 0;padding:13px;border:1px solid var(--line,#e6e0ed);border-radius:12px;background:var(--surface,#faf8ff)}
+.pk-d1-debtlinked{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.pk-d1-debtlinked div{display:flex;flex-direction:column;gap:5px}
+.pk-d1-debtlinked strong{font-size:.92rem;font-weight:700}
+.pk-d1-debtlinked small{font-size:.79rem;line-height:1.5;opacity:.8}
+.pk-d1-debtform{display:grid;gap:10px;margin-top:12px}
+.pk-d1-debtform p{margin:0;font-size:.88rem}
+.pk-d1-debtform label{display:grid;gap:5px;font-size:.83rem;font-weight:600}
+.pk-d1-debtform small{line-height:1.4}
+.pk-d1-debtform .pk-btn{justify-self:start}

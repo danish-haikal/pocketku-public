@@ -1,0 +1,20 @@
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { pbkdf2Sync, randomBytes } from 'node:crypto';
+
+let input = '';
+for await (const chunk of process.stdin) input += chunk;
+const { login, password } = JSON.parse(input);
+if (!/^[^\s@]+@[^\s@]+$/.test(login) || login.length > 200) throw new Error('Enter an email-shaped login identifier. It need not be a real mailbox.');
+if (typeof password !== 'string' || password.length < 6 || password.length > 1024) throw new Error('Use a unique password with at least 6 characters.');
+const salt = randomBytes(24);
+const iterations = 100000;
+const digest = pbkdf2Sync(password, salt, iterations, 32, 'sha256');
+const encode = value => Buffer.from(value).toString('base64url');
+const hash = `pbkdf2-sha256$${iterations}$${encode(salt)}$${encode(digest)}`;
+const path = '.dev.vars';
+const current = existsSync(path) ? readFileSync(path, 'utf8') : '';
+const oldWithoutPk = current.split(/\r?\n/).filter(line => !/^\s*PK_(LOGIN_ID|PASSWORD_HASH)\s*=/.test(line)).join('\n').trim();
+const newValue = `${oldWithoutPk ? oldWithoutPk + '\n' : ''}PK_LOGIN_ID=${JSON.stringify(login.toLowerCase())}\nPK_PASSWORD_HASH=${JSON.stringify(hash)}\n`;
+writeFileSync(path, newValue, { mode: 0o600 });
+console.log('Created/updated .dev.vars with a password HASH only (not the password).');
+console.log('Never commit .dev.vars or publish the hash. Restart npm run dev.');

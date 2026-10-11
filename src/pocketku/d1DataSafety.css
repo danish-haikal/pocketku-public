@@ -1,0 +1,25 @@
+.pk-safe{display:grid;gap:18px;max-width:1100px;margin:0 auto;color:inherit}
+.pk-safe-head{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+.pk-safe-head h1{font-size:1.55rem;margin:0 0 6px}
+.pk-safe-head p,.pk-safe-card>p,.pk-safe-section p{color:var(--muted,#888);line-height:1.55;margin:5px 0 12px}
+.pk-safe-card{background:var(--surface,#ffffff0c);border:1px solid var(--border,#8884);border-radius:18px;padding:20px;display:grid;gap:12px}
+.pk-safe-card h2{font-size:1.13rem;margin:0}
+.pk-safe-section h2{margin:0}
+.pk-safe-banner{border-radius:12px;padding:13px 15px;display:grid;gap:4px;font-size:.91rem}
+.pk-safe-ok{background:rgba(27,128,85,.12);border:1px solid rgba(27,128,85,.35)}
+.pk-safe-warn{background:rgba(185,127,18,.13);border:1px solid rgba(185,127,18,.45)}
+.pk-safe-checks{display:grid;gap:0}
+.pk-safe-check{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border,#9993)}
+.pk-safe-check:last-child{border-bottom:none}
+.pk-safe-check strong{font-size:.95rem}
+.pk-safe-check p{color:var(--muted,#888);margin:4px 0;font-size:.84rem;line-height:1.5}
+.pk-safe-check span{font-size:.83rem;white-space:nowrap;font-weight:700}
+.pk-safe-good{color:#219b71}.pk-safe-bad{color:#d08c2d}
+.pk-safe-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.pk-safe-metrics>div{padding:13px;background:var(--surface2,#9991);border-radius:12px;display:grid;gap:8px}
+.pk-safe-metrics span{font-size:.82rem;color:var(--muted,#888)}
+.pk-safe-metrics b{font-size:1.3rem;font-variant-numeric:tabular-nums}
+.pk-safe-command{padding:14px;background:#14141d;color:#f1edf4;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.84rem}
+.pk-safe-caution{font-size:.85rem;padding:12px;border-radius:10px;background:rgba(153,105,55,.1);border:1px solid rgba(173,125,62,.25);line-height:1.55}
+.pk-safe-error{color:#d75b5b}
+.pk-safe ul{margin:0;padding-left:23px;line-height:1.85;font-size:.91rem}

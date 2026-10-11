@@ -1,0 +1,44 @@
+/* Step 7.21 — clean, readable cards; intentionally separate from the receipt font. */
+.pk-community,.pk-community button,.pk-community input,.pk-community select{font-family:'DM Sans',Inter,system-ui,sans-serif}
+.pk-community{color:var(--ink);display:grid;gap:15px}
+.pk-com-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.pk-com-head h2{font-size:21px;letter-spacing:-.3px;margin:0 0 6px}
+.pk-com-head p{font-size:13px;color:var(--muted);line-height:1.5;margin:0}
+.pk-com-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pk-com-card{padding:19px;background:var(--surface);border:1px solid var(--border);border-radius:15px;min-width:0}
+.pk-com-card h3{font-size:16px;margin:0 0 12px}
+.pk-com-card label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--ink);min-width:0}
+.pk-com-card .pk-input{font-size:13px;width:100%;min-width:0;padding:11px 12px}
+.pk-com-caption{font-size:12px;color:var(--muted);line-height:1.6;margin:4px 0 14px}
+.pk-com-form{display:grid;gap:12px}
+.pk-com-form .pk-btn{justify-self:start}
+.pk-com-detail{display:grid;gap:11px}
+.pk-com-title h3{margin:0 0 4px}
+.pk-com-title p{color:var(--muted);font-size:12px;margin:0}
+.pk-com-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.pk-com-metrics>div{display:grid;gap:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.pk-com-metrics span{color:var(--muted);font-size:11px}
+.pk-com-metrics strong{font-size:18px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pk-com-mini{margin-top:15px}
+.pk-com-member,.pk-com-reminder,.pk-com-rule{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid var(--border);padding:14px 0;flex-wrap:wrap}
+.pk-com-members{margin-top:4px}
+.pk-com-member-meta,.pk-com-reminder-info{min-width:160px;flex:1;display:grid;gap:5px}
+.pk-com-member-meta b,.pk-com-reminder-info b{font-size:13px}
+.pk-com-member-meta small,.pk-com-reminder-info small{color:var(--muted);font-size:11px;line-height:1.5}
+.pk-com-member>strong,.pk-com-reminder>strong{font-size:14px;font-variant-numeric:tabular-nums}
+.pk-com-member-actions,.pk-com-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pk-com-card label.pk-com-check{display:flex;align-items:center;gap:7px;font-size:12px;white-space:nowrap;font-weight:700}
+.pk-com-check input{accent-color:var(--accent);width:16px;height:16px}
+.pk-com-link{background:none;border:0;padding:5px;cursor:pointer;color:var(--accent);font-size:12px;font-weight:700}
+.pk-com-link:disabled{opacity:.5;cursor:wait}
+.pk-com-inline{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:15px}
+.pk-com-inline label{flex:1;min-width:120px}
+.pk-com-inline label.pk-com-self{flex:none;min-width:0;margin-bottom:12px}
+.pk-com-inline .pk-btn{align-self:end}
+.pk-com-edit{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;width:100%}
+.pk-com-edit label{flex:1;min-width:120px}
+.pk-com-error{padding:13px 15px;border:1px solid #d88b95;border-radius:9px;color:#bb4253;font-size:13px}
+.pk-com-notice{padding:12px 14px;border-radius:9px;background:var(--purplelight);color:var(--ink);font-size:12px;margin:0}
+.pk-com-note{margin:2px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
+@media(max-width:820px){.pk-com-two{grid-template-columns:1fr}.pk-com-head{flex-wrap:wrap}}
+@media(max-width:520px){.pk-com-metrics{grid-template-columns:1fr}.pk-com-member,.pk-com-reminder{align-items:flex-start}.pk-com-member-actions{width:100%}.pk-com-card{padding:14px}}
