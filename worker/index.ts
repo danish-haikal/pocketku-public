@@ -916,11 +916,12 @@ export default {
         }
         // SQLite triggers check exact funding, unreserved balances, and
         // atomically debit each source account when Reserved -> Paid.
-        const result=await env.DB.prepare(`
+        const updated=await env.DB.prepare(`
           UPDATE monthly_commitments SET status=?,updated_at=CURRENT_TIMESTAMP
           WHERE id=? AND status=?
-        `).bind(next,id,before.status).run();
-        if(result.meta.changes!==1)return replyError('Status changed concurrently; refresh first.',409);
+          RETURNING id
+        `).bind(next,id,before.status).first<{id:number}>();
+        if(!updated)return replyError('Status changed concurrently; refresh first.',409);
         return Response.json({success:true,status:next,already_set:false});
       }catch(error){
         console.error('D1 commitment status update rejected',error);
