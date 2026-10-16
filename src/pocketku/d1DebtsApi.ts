@@ -2,7 +2,7 @@
 export interface D1Debt {
   id:number;creation_key:string;name:string;creditor:string;
   starting_balance_sen:number;as_of_date:string;note:string;
-  repaid_sen:number;remaining_sen:number;created_at:string;
+  repaid_sen:number;remaining_sen:number;archived_at:string|null;created_at:string;
 }
 export interface D1DebtPayment {
   id:number;payment_key:string;debt_id:number;mode:'direct'|'commitment';
@@ -50,4 +50,8 @@ export async function editD1Debt(id:number,body:Pick<CreateDebt,'name'|'creditor
 }
 export async function postD1DebtPayment(id:number,body:DebtPaymentDraft):Promise<void>{
   await api(`/api/debts/${id}/payments`,{method:'POST',...json(body)});
+}
+
+export async function manageD1Debt(id:number,action:'archive'|'restore'|'delete'):Promise<void>{
+  await api(`/api/debts/${id}${action==='delete'?'':`/${action}`}`,{method:action==='delete'?'DELETE':'POST'});
 }

@@ -80,7 +80,7 @@ export default function D1Debts() {
     try {
       await createD1Debt({...draft,creation_key:key});
       pendingCreate.current=null;
-      setNewDebt(freshDebt());setCreateOpen(false);setMessage('Debt saved in local D1. It has not changed any bank balance.');
+      setNewDebt(freshDebt());setCreateOpen(false);setMessage('Debt saved. It has not changed any bank balance.');
       await refresh();
     } catch(err){setError(err instanceof Error?err.message:'Unable to create debt.');}
     finally {setBusy(false)}
@@ -112,7 +112,7 @@ export default function D1Debts() {
     const commitmentId=mode==='commitment'?Number(paymentDraft.commitment):null;
     const bank=accounts.find(a=>a.id===accountId);
     const linked=eligible.find(c=>c.id===commitmentId);
-    if(mode==='direct'&&(!bank||bank.is_active!==1)) {setError('Select an active D1 bank account.');return;}
+    if(mode==='direct'&&(!bank||bank.is_active!==1)) {setError('Select an active bank account.');return;}
     if(mode==='direct'&&bank && bank.current_balance_sen-bank.reserved_balance_sen<amount){
       setError('This account does not have enough available cash after reservations.');return;
     }
@@ -121,7 +121,7 @@ export default function D1Debts() {
     }
     const protectedBank=mode==='direct'&&bank?.is_protected===1;
     const summary=mode==='direct'
-      ? `Record ${money(amount)} paid from ${bank?.name} towards “${d.name}”? This will debit your D1 bank cash.`
+      ? `Record ${money(amount)} paid from ${bank?.name} towards “${d.name}”? This will debit your bank balance.`
       : `Link ${money(amount)} of the already-paid commitment “${linked?.name}” to “${d.name}”? No second bank debit will be created.`;
     if(!window.confirm(summary+(protectedBank?' This uses a protected Tabung.':'')))return;
     const draft={mode,amount_sen:amount,account_id:accountId,commitment_id:commitmentId,
@@ -142,7 +142,7 @@ export default function D1Debts() {
     finally {setBusy(false)}
   }
   return <div className="pk-debt" aria-label="D1 debts and repayments">
-    <header className="pk-debt-head"><div><small className="pk-debt-eyebrow">LOCAL D1 · DEBT TRACKER</small>
+    <header className="pk-debt-head"><div><small className="pk-debt-eyebrow">DEBT TRACKER</small>
       <h2>Debts & repayments</h2>
       <p>Track an outstanding balance, payments and the cash account actually used.</p>
     </div><button className="pk-btn" type="button" disabled={busy} onClick={()=>void refresh()}>↻ Refresh</button></header>
@@ -169,9 +169,9 @@ export default function D1Debts() {
         <label>Balance as-of date<input required type="date" className="pk-input" value={newDebt.date} onChange={e=>setNewDebt(v=>({...v,date:e.target.value}))}/></label>
         <label className="pk-debt-wide">Optional note<textarea className="pk-input" rows={2} maxLength={500} value={newDebt.note} onChange={e=>setNewDebt(v=>({...v,note:e.target.value}))} placeholder="Estimated figure; verify final statement"/></label>
       </div>
-      <button className="pk-btn pk-primary" disabled={busy} type="submit">{busy?'Saving…':'Save debt to D1'}</button>
+      <button className="pk-btn pk-primary" disabled={busy} type="submit">{busy?'Saving…':'Save debt'}</button>
     </form>}
-    {loading?<p className="pk-debt-empty">Loading debts from D1…</p>:
+    {loading?<p className="pk-debt-empty">Loading debts…</p>:
       shown.length===0?<p className="pk-debt-empty">No matching debts yet. Add a fictional one to test the tracker.</p>:
       <div className="pk-debt-list">{shown.map(d=>{
         const related=payments.filter(p=>p.debt_id===d.id);
@@ -219,6 +219,6 @@ export default function D1Debts() {
           {related.length>0&&<details className="pk-debt-history"><summary>Payment history · {related.length} {related.length===1?'record':'records'}</summary><div>{related.map(p=><div className="pk-debt-historyrow" key={p.id}><div><b>{p.mode==='direct'?'Bank payment':'Linked Paid instalment'}</b><small>{p.paid_on} · {p.account_name||p.commitment_name||'D1 record'}</small>{p.note&&<small>{p.note}</small>}</div><strong>{money(p.amount_sen)}</strong></div>)}</div></details>}
         </article>;
       })}</div>}
-    <p className="pk-debt-footer"><b>Important:</b> Linking a paid instalment doesn't automatically edit future monthly commitments. If you fully settle a financing facility, review and remove only its future <em>unallocated</em> bills in Monthly Plan. Don't duplicate a repayment here and as a new paid bill. Local prototype only; no payment reversal tool yet.</p>
+    <p className="pk-debt-footer"><b>Important:</b> Linking a paid instalment doesn't automatically edit future monthly commitments. If you fully settle a financing facility, review and remove only its future <em>unallocated</em> bills in Monthly Plan. Don't duplicate a repayment here and as a new paid bill. Payment reversals are not available yet.</p>
   </div>;
 }

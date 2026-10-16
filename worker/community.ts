@@ -31,7 +31,16 @@ export function occurrence(first:string,freq:string,month:string):string|null {
 }
 export async function communityRoute(request:Request,env:Env,url:URL):Promise<Response|null>{
   const path=url.pathname;
-  if(!path.startsWith('/api/shared-collections')&&!path.startsWith('/api/family-reminders'))return null;
+  if(!path.startsWith('/api/shared-collections')&&!path.startsWith('/api/family-reminders')&&!path.startsWith('/api/family-profiles'))return null;
+  if(path==='/api/family-profiles'&&request.method==='GET'){
+    try{const profiles=await env.DB.prepare('SELECT id,name,is_active FROM family_profiles WHERE is_active=1 ORDER BY id').all();return good({profiles:profiles.results})}
+    catch(e){return limitedError(e,'list family profiles')}
+  }
+  if(path==='/api/family-profiles'&&request.method==='POST'){
+    const d=await parseJson(request);if(!d||!nameOk(d.name,80))return bad('Enter a person name (up to 80 characters).');
+    try{const r=await env.DB.prepare('INSERT INTO family_profiles(name) VALUES(?)').bind(d.name.trim()).run();return good({id:r.meta.last_row_id})}
+    catch(e){return limitedError(e,'add family profile')}
+  }
   if(path==='/api/shared-collections'&&request.method==='GET'){
     try{
       const collections=await env.DB.prepare('SELECT id,name,period,created_at FROM shared_collections ORDER BY period DESC,id DESC LIMIT 200').all();
@@ -117,12 +126,12 @@ export async function communityRoute(request:Request,env:Env,url:URL):Promise<Re
   if(path==='/api/family-reminders'&&request.method==='GET'){
     const month=url.searchParams.get('month');if(!periodOk(month))return bad('Select a valid reminder month.');
     try{
-      const reminders=await env.DB.prepare('SELECT id,name,amount_sen,first_due_date,frequency,note,is_active FROM family_reminders ORDER BY first_due_date,id').all();
+      const reminders=await env.DB.prepare('SELECT id,person_id,name,amount_sen,first_due_date,frequency,note,is_active FROM family_reminders ORDER BY first_due_date,id').all();
       const checks=await env.DB.prepare('SELECT reminder_id,due_date,is_paid,amount_sen FROM family_reminder_checks WHERE due_date BETWEEN ? AND ?')
         .bind(month+'-01',month+'-31').all<{reminder_id:number;due_date:string;is_paid:number;amount_sen:number}>();
       const checked=new Map(checks.results.map(x=>[x.reminder_id+'|'+x.due_date,x]));
       const occurrences=[] as Array<Record<string,unknown>>;
-      for(const r of reminders.results as Array<{id:number;name:string;amount_sen:number;first_due_date:string;frequency:string;note:string;is_active:number}>){
+      for(const r of reminders.results as Array<{id:number;person_id:number;name:string;amount_sen:number;first_due_date:string;frequency:string;note:string;is_active:number}>){
         if(r.is_active!==1)continue;
         const due=occurrence(r.first_due_date,r.frequency,month);
         if(due){const check=checked.get(r.id+'|'+due);
@@ -136,13 +145,15 @@ export async function communityRoute(request:Request,env:Env,url:URL):Promise<Re
   if(path==='/api/family-reminders'&&request.method==='POST'){
     const d=await parseJson(request);
     if(!d||!keyOk(d.creation_key)||!nameOk(d.name)||!money(d.amount_sen)||!dateOk(d.first_due_date)||
-       !['one-time','monthly','yearly'].includes(String(d.frequency))||typeof d.note!=='string'||d.note.length>500)
+       !['one-time','monthly','yearly'].includes(String(d.frequency))||typeof d.note!=='string'||d.note.length>500||!Number.isSafeInteger(d.person_id)||Number(d.person_id)<1)
       return bad('Enter a name, amount, valid first due date and frequency.');
     try{
       const old=await env.DB.prepare('SELECT id FROM family_reminders WHERE creation_key=?').bind(d.creation_key).first<{id:number}>();
       if(old)return good({id:old.id,already_created:true});
-      await env.DB.prepare('INSERT INTO family_reminders(creation_key,name,amount_sen,first_due_date,frequency,note) VALUES(?,?,?,?,?,?)')
-        .bind(d.creation_key,d.name.trim(),d.amount_sen,d.first_due_date,d.frequency,d.note).run();
+      const person=await env.DB.prepare('SELECT id FROM family_profiles WHERE id=? AND is_active=1').bind(Number(d.person_id)).first();
+      if(!person)return bad('Choose a saved family member.',404);
+      await env.DB.prepare('INSERT INTO family_reminders(creation_key,name,amount_sen,first_due_date,frequency,note,person_id) VALUES(?,?,?,?,?,?,?)')
+        .bind(d.creation_key,d.name.trim(),d.amount_sen,d.first_due_date,d.frequency,d.note,Number(d.person_id)).run();
       return good();
     }catch(e){return limitedError(e,'create family reminder')}
   }

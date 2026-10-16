@@ -52,3 +52,6 @@
 .pk-debt-historyrow>strong{font-variant-numeric:tabular-nums;white-space:nowrap}
 .pk-debt-footer{font-size:12px;line-height:1.7;color:var(--muted);margin-top:16px}
 @media(max-width:680px){.pk-debt-head h2{font-size:20px}.pk-debt-stats{gap:7px}.pk-debt-stats>div{padding:10px}.pk-debt-stats strong{font-size:15px}.pk-debt-stats small{font-size:10px}.pk-debt-card{padding:14px}.pk-debt-cardhead>div:last-child strong{font-size:16px}.pk-debt-fields{grid-template-columns:1fr}.pk-debt-wide{grid-column:auto}}
+.pk-debt-archive-toggle{display:inline-flex;align-items:center;gap:7px;font-size:12px;white-space:nowrap;cursor:pointer}
+.pk-debt-archive-toggle input{accent-color:#80558e}
+.pk-debt-delete{border-color:#b96870!important;color:#c15a63!important}

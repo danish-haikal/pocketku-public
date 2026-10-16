@@ -108,12 +108,12 @@ export default function D1FinancialOverview({ mode, monthIndex, onOpenMonthly, o
     });
   }, [accounts, commitments, funding]);
 
-  return <div className="pk-d1finance" aria-label={mode === 'overview' ? 'D1 financial dashboard' : 'D1 money sources'}>
+  return <div className="pk-d1finance" aria-label={mode === 'overview' ? 'Financial overview' : 'Money sources'}>
     <div className="pk-f-header">
-      <div><span className="pk-f-eyebrow">LOCAL D1 · SOURCE OF TRUTH</span>
+      <div><span className="pk-f-eyebrow">FINANCIAL OVERVIEW</span>
         <h2>{mode === 'overview' ? 'Your money at a glance' : 'Where your monthly money comes from'}</h2>
         <p>{mode === 'overview'
-          ? 'Actual account cash and reservations are calculated from your saved records—not the browser demo.'
+          ? 'Account balances and reserved funds from your saved transactions.'
           : 'See which accounts are funding bills in this month. Make or change assignments from the Monthly Plan.'}</p>
       </div>
       <button className="pk-btn" onClick={() => {setBusy(true);setRefreshKey(n => n + 1)}} disabled={busy} type="button">
@@ -121,15 +121,15 @@ export default function D1FinancialOverview({ mode, monthIndex, onOpenMonthly, o
       </button>
     </div>
 
-    {error && <div className="pk-f-error" role="alert">Could not load D1 information: {error}</div>}
+    {error && <div className="pk-f-error" role="alert">Could not load your information: {error}</div>}
     {!data && !error && <div className="pk-f-loading" role="status">Loading saved account and commitment balances…</div>}
     {data && <>
       <div className="pk-f-stats" aria-label="Global bank account totals">
-        <div><span>Total cash</span><strong>{money(totals.cash)}</strong><small>Ledger balances across D1 accounts</small></div>
+        <div><span>Total cash</span><strong>{money(totals.cash)}</strong><small>Across all accounts</small></div>
         <div><span>Reserved money</span><strong>{money(totals.reserved)}</strong><small>Holds across all months, not spent</small></div>
         <div className="pk-f-available"><span>Available cash</span><strong>{money(totals.available)}</strong><small>Cash minus current reservations</small></div>
       </div>
-      <div className="pk-f-periodnote">Cash and reserved totals cover <b>all D1 accounts and all months</b>. The commitment figures below refer only to <b>{monthLabel}</b>.</div>
+      <div className="pk-f-periodnote">Cash and reserved totals cover <b>all your accounts and all months</b>. The commitment figures below refer only to <b>{monthLabel}</b>.</div>
       <section className="pk-f-panel">
         <div className="pk-f-sectiontitle">
           <div><h3>{monthLabel} commitments</h3><p>{commitments.length} planned items · Allocation month, not necessarily due month</p></div>
@@ -148,10 +148,10 @@ export default function D1FinancialOverview({ mode, monthIndex, onOpenMonthly, o
       </section>
       <section className="pk-f-panel">
         <div className="pk-f-sectiontitle">
-          <div><h3>D1 accounts & funding</h3><p>Cash reflects income, transfers and paid expenses already recorded in D1.</p></div>
+          <div><h3>Accounts & funding</h3><p>Cash reflects income, transfers and paid expenses already recorded in D1.</p></div>
           <button className="pk-btn" type="button" onClick={onOpenAccounts}>Manage accounts →</button>
         </div>
-        {accounts.length === 0 ? <p className="pk-f-empty">No saved D1 accounts. Add a fictional test account from My Accounts.</p> :
+        {accounts.length === 0 ? <p className="pk-f-empty">No accounts yet. Add one from My Accounts.</p> :
           <div className="pk-f-accounts">{fundingByAccount.map(({account,rows,planned,reservedInMonth,paidInMonth}) => {
             const available = account.current_balance_sen - account.reserved_balance_sen;
             return <article className="pk-f-account" key={account.id}>

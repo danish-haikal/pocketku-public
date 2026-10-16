@@ -1,4 +1,4 @@
-/** Local-only Cloudflare D1 income API. Never use before production authentication. */
+/** Income API. All incoming cash is persisted server-side. */
 export interface D1IncomeRecord {
   id: number;
   income_key: string;

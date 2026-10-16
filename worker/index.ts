@@ -1,3 +1,4 @@
+import { subscriptionRoute } from './subscriptions.js';
 import { communityRoute } from './community.js';
 import { safetyRoute } from './safety.js';
 import { authRoute, hasPocketKuSession, mutationAllowed, unauthorized, missingAuthConfig, isPocketKuConfigured, csrfDenied } from './auth.js';
@@ -33,6 +34,10 @@ export default {
     // Step 7.21: D1 shared payments + independent family reminders.
     const community=await communityRoute(request,env,url);
     if(community)return community;
+
+    // Personal subscriptions/trials, authenticated checklist only. No bank ledger writes.
+    const subscriptions=await subscriptionRoute(request,env,url);
+    if(subscriptions)return subscriptions;
 
     // Step 7.20.2: one-time financing setup. Uses the existing debts,
     // commitments and auto-debt-link tables; NO schema migration required.
@@ -238,6 +243,25 @@ export default {
         if(scope==='future'&&!target.series_key)return replyError('This bill is not part of a recurring series.',409);
         if(principal!==null && Number(principal)>target.amount_sen)
           return replyError('Principal reduction must not exceed this bill amount.',400);
+        // Explain a projected balance mismatch BEFORE the SQLite trigger gives
+        // an opaque conflict. Payment itself remains guarded atomically in DB.
+        const debt=await env.DB.prepare(`SELECT d.starting_balance_sen-
+          COALESCE((SELECT SUM(p.amount_sen) FROM debt_payments p WHERE p.debt_id=d.id),0) AS remaining
+          FROM debts d WHERE d.id=?`).bind(debtId).first<{remaining:number}>();
+        if(!debt||debt.remaining<=0)return replyError('Debt not found or fully settled.',409);
+        if(scope==='future'){
+          const schedule=await env.DB.prepare(`SELECT COUNT(*) AS count,
+            COALESCE(SUM(COALESCE(?,amount_sen)),0) AS total
+            FROM monthly_commitments WHERE series_key=? AND allocation_month>=? AND status<>'paid'`)
+            .bind(principal,target.series_key,target.allocation_month).first<{count:number;total:number}>();
+          const expected=schedule?.total??0;
+          if(expected>debt.remaining){
+            const money=(n:number)=>'RM '+(n/100).toFixed(2);
+            return replyError(`Cannot connect all future instalments: ${schedule?.count??0} scheduled repayments total ${money(expected)}, but the debt has ${money(debt.remaining)} remaining (difference ${money(expected-debt.remaining)}). Review which instalments are already paid, or link only this one.`,409);
+          }
+        }else if(Number(principal??target.amount_sen)>debt.remaining){
+          return replyError('The instalment debt reduction exceeds the outstanding debt balance.',409);
+        }
         await env.DB.prepare(`INSERT INTO commitment_debt_links
           (debt_id,commitment_id,series_key,from_month,principal_sen)
           VALUES (?,?,?,?,?)`).bind(debtId,scope==='one'?cid:null,
@@ -434,6 +458,18 @@ export default {
       }
     }
 
+    // Read-only full commitment schedule: computed from saved D1 records.
+    // A timeline stops at the last stored commitment; no assumed infinite recurring bills.
+    if(url.pathname==='/api/commitments/timeline'&&request.method==='GET'){
+      try{const result=await env.DB.prepare(`SELECT allocation_month AS period,COUNT(*) AS count,
+         COALESCE(SUM(amount_sen),0) AS planned_sen,
+         COALESCE(SUM(CASE WHEN status='reserved' THEN amount_sen ELSE 0 END),0) AS reserved_sen,
+         COALESCE(SUM(CASE WHEN status='paid' THEN amount_sen ELSE 0 END),0) AS paid_sen,
+         COALESCE(SUM(CASE WHEN status='unallocated' THEN amount_sen ELSE 0 END),0) AS unallocated_sen
+         FROM monthly_commitments GROUP BY allocation_month ORDER BY allocation_month`).all();
+        return Response.json({success:true,months:result.results});
+      }catch(error){console.error('Commitment timeline unavailable',error);return replyError('Could not load commitment timeline.',500)}
+    }
     if (url.pathname === '/api/accounts') {
       if (request.method === 'GET') {
         try {
@@ -498,6 +534,42 @@ export default {
           console.error('PocketKu accounts POST failed',error);
           return replyError('Database error while saving account.',500);
         }
+      }
+      return replyError('Method not allowed.',405);
+    }
+
+    // Edit account metadata only; balances always come from the ledger.
+    const accountDetail=url.pathname.match(/^\/api\/accounts\/(\d+)$/);
+    if(accountDetail){
+      const id=Number(accountDetail[1]);
+      if(!Number.isSafeInteger(id)||id<1)return replyError('Invalid account.',400);
+      if(request.method==='PATCH'){
+        let d:Record<string,unknown>;
+        try{const raw:unknown=await request.json();if(!raw||typeof raw!=='object'||Array.isArray(raw))return replyError('Invalid account data.',400);d=raw as Record<string,unknown>}
+        catch{return replyError('Invalid JSON.',400)}
+        const name=typeof d.name==='string'?d.name.trim():'';
+        const bank=typeof d.bank_name==='string'?d.bank_name.trim():'';
+        if(!name||name.length>100||!bank||bank.length>100||
+          (d.account_type!=='bank'&&d.account_type!=='tabung')||
+          (d.is_protected!==0&&d.is_protected!==1))return replyError('Enter valid account details.',400);
+        try{
+          const result=await env.DB.prepare(`UPDATE accounts SET name=?,bank_name=?,account_type=?,is_protected=?,updated_at=CURRENT_TIMESTAMP
+            WHERE id=? AND is_active=1`).bind(name,bank,d.account_type,d.is_protected,id).run();
+          if(!result.meta.changes)return replyError('Account not found.',404);
+          return Response.json({success:true});
+        }catch(error){console.error('Account edit rejected',error);return replyError('Could not update account details.',409)}
+      }
+      if(request.method==='DELETE'){
+        // Archiving is allowed only for a completely empty, unused account.
+        // Keep historical accounts visible to preserve accurate ledger reporting.
+        try{
+          const result=await env.DB.prepare(`UPDATE accounts SET is_active=0,updated_at=CURRENT_TIMESTAMP WHERE id=? AND is_active=1
+            AND opening_balance_sen=0
+            AND NOT EXISTS(SELECT 1 FROM account_ledger WHERE account_id=? OR destination_account_id=?)
+            AND NOT EXISTS(SELECT 1 FROM commitment_funding WHERE account_id=?)`).bind(id,id,id,id).run();
+          if(!result.meta.changes)return replyError('Only empty, unused accounts can be archived. Keep historical or funded accounts visible.',409);
+          return Response.json({success:true});
+        }catch(error){console.error('Account archive rejected',error);return replyError('Could not archive account.',409)}
       }
       return replyError('Method not allowed.',405);
     }
@@ -916,12 +988,11 @@ export default {
         }
         // SQLite triggers check exact funding, unreserved balances, and
         // atomically debit each source account when Reserved -> Paid.
-        const updated=await env.DB.prepare(`
+        const result=await env.DB.prepare(`
           UPDATE monthly_commitments SET status=?,updated_at=CURRENT_TIMESTAMP
           WHERE id=? AND status=?
-          RETURNING id
-        `).bind(next,id,before.status).first<{id:number}>();
-        if(!updated)return replyError('Status changed concurrently; refresh first.',409);
+        `).bind(next,id,before.status).run();
+        if(result.meta.changes!==1)return replyError('Status changed concurrently; refresh first.',409);
         return Response.json({success:true,status:next,already_set:false});
       }catch(error){
         console.error('D1 commitment status update rejected',error);

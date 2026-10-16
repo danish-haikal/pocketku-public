@@ -1,0 +1,20 @@
+.pk-scenario{display:flex;flex-direction:column;gap:18px}
+.pk-scenario-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pk-scenario-overview>div,.pk-scenario-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:19px}
+.pk-scenario-overview small,.pk-scenario-result small{color:var(--muted);display:block;font-size:12px;margin-bottom:7px}
+.pk-scenario-overview strong{font-size:21px;display:block;font-variant-numeric:tabular-nums}
+.pk-scenario-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.pk-scenario-card h2{font-size:19px;margin:5px 0 8px}
+.pk-scenario-card>p,.pk-scenario-disclaimer{color:var(--muted);font-size:13px;line-height:1.6}
+.pk-scenario-label-small{font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:11px;color:var(--accent)}
+.pk-scenario-card dl{border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:14px 0;padding:12px 0}
+.pk-scenario-card dl>div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;font-size:12px}
+.pk-scenario-card dt{color:var(--muted)}.pk-scenario-card dd{font-weight:800;margin:0;white-space:nowrap}
+.pk-scenario-result{padding:10px 0}.pk-scenario-result strong{font-size:25px;font-variant-numeric:tabular-nums}.pk-scenario-result.secondary strong{font-size:19px}
+.pk-scenario-negative{color:#dd6b73}.pk-scenario-label{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:700;margin:12px 0;max-width:600px}
+.pk-scenario-debts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pk-scenario-debt{display:flex;align-items:center;gap:11px;border:1px solid var(--border);border-radius:11px;padding:13px;font-size:13px;cursor:pointer}
+.pk-scenario-debt input{accent-color:#80558e}.pk-scenario-debt span{flex:1}.pk-scenario-debt strong{white-space:nowrap}
+.pk-scenario-disclaimer{border-left:3px solid var(--accent);padding:9px 14px}
+@media(max-width:760px){.pk-scenario-grid{grid-template-columns:1fr}.pk-scenario-overview{grid-template-columns:1fr 1fr}.pk-scenario-debts{grid-template-columns:1fr}}
+@media(max-width:440px){.pk-scenario-overview{grid-template-columns:1fr}}

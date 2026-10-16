@@ -135,7 +135,7 @@ export default function D1MonthlyPlanner({ monthIndex }: { monthIndex: number })
       }
       pending.current=null;
       if(typeof editId==='number')setLastTouchedId(editId);
-      setEditId(null);setMessage('Saved to local D1. Refresh the browser to verify persistence.');
+      setEditId(null);setMessage('Commitment saved.');
       requestRefresh();
     }catch(err){setError(err instanceof Error?err.message:'Could not save. If uncertain, check existing records before retrying.');}
     finally{setWorking(false)}
@@ -145,14 +145,14 @@ export default function D1MonthlyPlanner({ monthIndex }: { monthIndex: number })
     const scope:itemScope= item.series_key&&window.confirm('Delete this and all future unallocated instalments? OK = future, Cancel = only this one')?'future':'one';
     if(!window.confirm(`Delete ${item.name} for ${monthNames[monthIndex]}${scope==='future'?' and later months':''}?`))return;
     setWorking(true);setError('');
-    try{await deleteD1Commitment(item.id,scope);requestRefresh();setMessage('Unallocated plan removed from D1.');}
+    try{await deleteD1Commitment(item.id,scope);requestRefresh();setMessage('Commitment removed.');}
     catch(err){setError(err instanceof Error?err.message:'Delete failed.');}
     finally{setWorking(false)}
   }
   type itemScope='one'|'future';
   async function importExamples(){
     if(busy)return;
-    if(!window.confirm('Import privately configured commitments into D1?\n\nThis adds the prepared payment schedule as unallocated commitments only. No bank balance is changed and no bill is marked Paid. Existing imports are skipped.'))return;
+    if(!window.confirm('Import privately configured commitments into your accounts?\n\nThis adds the prepared payment schedule as unallocated commitments only. No bank balance is changed and no bill is marked Paid. Existing imports are skipped.'))return;
     const demo=createDemoData();
     if (demo.commitments.length === 0) {
       setMessage('No default commitments are embedded in this public-repo-safe version. Your previously imported D1 commitments are preserved. Use New commitment or Set Up Financing for additional payments.');
@@ -278,7 +278,7 @@ export default function D1MonthlyPlanner({ monthIndex }: { monthIndex: number })
       setLastTouchedId(item.id);
       if(next!=='unallocated')setExpandedFunding(null);
       setMessage(result.already_set?'Already recorded in D1; no duplicate debit.':
-        next==='paid'?(connectedDebt?'Paid once; bank cash and linked debt both updated.':'Paid and debited once in the D1 ledger.'):
+        next==='paid'?(connectedDebt?'Paid once; bank cash and linked debt both updated.':'Paid and debited once in the financial records.'):
         next==='reserved'?'Funds reserved. Actual bank cash is unchanged.':'Reservation released.');
       requestRefresh();
       // Refresh the parent dashboard and account selectors from the D1 source of truth.
@@ -294,7 +294,7 @@ export default function D1MonthlyPlanner({ monthIndex }: { monthIndex: number })
     <header className="pk-d1-header">
       <div>
         <div className="pk-d1-overline">YOUR MONTHLY PLAN</div>
-        <h2>Monthly commitments <span className="pk-d1-save-indicator">● Saved locally</span></h2>
+        <h2>Monthly commitments <span className="pk-d1-save-indicator">● Saved</span></h2>
         <p>{monthNames[monthIndex]} · Manage which accounts fund each bill and when you actually pay it.</p>
       </div>
       <button className="pk-btn" type="button" onClick={()=>requestRefresh()} disabled={busy}>
@@ -318,7 +318,7 @@ export default function D1MonthlyPlanner({ monthIndex }: { monthIndex: number })
     <div className="pk-d1-actions">
       <button type="button" className="pk-btn pk-primary" onClick={newItem} disabled={busy}>+ New commitment</button>
       <button type="button" className="pk-btn" onClick={()=>setShowFinancing(v=>!v)} disabled={busy}>+ Set Up Financing</button>
-      <button type="button" className="pk-btn" onClick={()=>void importExamples()} disabled={busy}>Import My Commitments</button>
+      {createDemoData().commitments.length>0&&<button type="button" className="pk-btn" onClick={()=>void importExamples()} disabled={busy}>Import My Commitments</button>}
     </div>
 
     {showFinancing&&<D1FinancingSetup planningMonth={period} onClose={()=>setShowFinancing(false)} onSaved={afterFinancingSetup}/>}

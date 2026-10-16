@@ -38,12 +38,10 @@ export type FinanceData = {
   shared: SharedCollection[];
   reminders: Reminder[];
 };
-export const monthNames = [
-  'Oct 2026','Nov 2026','Dec 2026','Jan 2027','Feb 2027','Mar 2027',
-  'Apr 2027','May 2027','Jun 2027','Jul 2027','Aug 2027','Sep 2027',
-  'Oct 2027','Nov 2027','Dec 2027','Jan 2028','Feb 2028','Mar 2028',
-  'Apr 2028','May 2028','Jun 2028','Jul 2028'
-] as const;
+// Allow navigation through future commitment schedules without changing the DB.
+// Timeline independently shows *all* recorded months, even beyond this UI range.
+export const monthNames: string[] = Array.from({length:120},(_,i)=>
+  new Date(Date.UTC(2026,9+i,1)).toLocaleDateString('en-MY',{month:'short',year:'numeric',timeZone:'UTC'}));
 export const amount = (cents: number) => 'RM ' + (cents / 100).toLocaleString('en-MY', {minimumFractionDigits:2,maximumFractionDigits:2});
 export const toCents = (numberValue: number|string) => Math.round(Number(numberValue) * 100);
 export const fromCents = (cents: number) => (cents / 100).toFixed(2);

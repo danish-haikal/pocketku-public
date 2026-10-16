@@ -1,4 +1,4 @@
-/** PocketKu local D1 Accounts API — development-only integration. */
+/** PocketKu accounts API. Bank cash is ledger-derived and never edited as metadata. */
 export interface D1AccountRecord {
   id: number;
   name: string;
@@ -22,7 +22,7 @@ export async function getD1Accounts(): Promise<D1AccountRecord[]> {
   const response = await fetch('/api/accounts', { cache: 'no-store' });
   const json: unknown = await response.json();
   if (!response.ok || !json || typeof json !== 'object') {
-    throw new Error('Could not load accounts from local D1.');
+    throw new Error('Could not load your accounts.');
   }
   const body = json as Record<string, unknown>;
   if (body.success !== true || !Array.isArray(body.accounts)) {
@@ -79,4 +79,15 @@ export async function createD1Transfer(transfer: NewD1Transfer): Promise<number>
     throw new Error(typeof body.error==='string'?body.error:'Transfer was not saved.');
   }
   return body.id;
+}
+
+export async function updateD1Account(id:number,body:Pick<NewD1Account,'name'|'bank_name'|'account_type'|'is_protected'>):Promise<void>{
+  const res=await fetch('/api/accounts/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json() as {success?:boolean;error?:string};
+  if(!res.ok||data.success!==true)throw new Error(data.error||'Could not update account.');
+}
+export async function archiveD1Account(id:number):Promise<void>{
+  const res=await fetch('/api/accounts/'+id,{method:'DELETE'});
+  const data=await res.json() as {success?:boolean;error?:string};
+  if(!res.ok||data.success!==true)throw new Error(data.error||'Could not archive account.');
 }

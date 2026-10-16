@@ -1,3 +1,5 @@
+import SubscriptionDueBanner from './pocketku/SubscriptionDueBanner';
+import D1PersonalSubscriptions from './pocketku/D1PersonalSubscriptions';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createDemoData } from './pocketku/seed';
 import D1AccountsPreview from './pocketku/D1AccountsPreview';
@@ -7,6 +9,7 @@ import D1Debts from './pocketku/D1Debts';
 import D1SharedPayments from './pocketku/D1SharedPayments';
 import D1FamilyReminders from './pocketku/D1FamilyReminders';
 import D1DataSafety from './pocketku/D1DataSafety';
+import D1CommitmentTimeline from './pocketku/D1CommitmentTimeline';
 import PocketKuAuthGate from './pocketku/PocketKuAuthGate';
 import { createD1Account, createD1Transfer, getD1Accounts, type D1AccountRecord } from './pocketku/d1AccountsApi';
 import { confirmD1Income, createD1ExpectedIncome, getD1Income, updateD1IncomeEstimate, type D1IncomeRecord } from './pocketku/d1IncomeApi';
@@ -20,12 +23,14 @@ import {
 } from './pocketku/types';
 
 const KEY = 'pocketku-demo-v1';
+// Legacy browser-only UI is kept out of the production interface.
+const SHOW_LEGACY_DEMOS = false;
 const tabs = [
   ['overview','Overview','▦'],['monthly','Monthly plan','☷'],['accounts','My accounts','▣'],
   ['funding','Money sources','↗'],['income','Income','⊕'],['settlements','Settlements','◇'],
-  ['shared','Shared payments','♧'],['mother',"Mother's reminders",'♡'],['scenario','Scenarios','◷'],['safety','Data & safety','◈'],
+  ['shared','Shared payments','♧'],['subscriptions','My subscriptions','◷'],['mother','Family reminders','♡'],['safety','Settings','◈'],
 ] as const;
-type Tab = (typeof tabs)[number][0];
+type Tab = (typeof tabs)[number][0] | 'scenario';
 function readData(): FinanceData {
   try {
     const saved = localStorage.getItem(KEY);
@@ -59,6 +64,7 @@ function PocketKuDashboard() {
   const [data,setData]=useState<FinanceData>(readData);
   const [theme,setTheme]=useState<'light'|'dark'>(()=>localStorage.getItem('pocketku-theme')==='dark'?'dark':'light');
   const [tab,setTab]=useState<Tab>('overview');
+  const [monthlyView,setMonthlyView]=useState<'planner'|'timeline'>('planner');
   const [month,setMonth]=useState(0);
   const [notice,setNotice]=useState('');
   const [savingAccount,setSavingAccount]=useState(false);
@@ -404,7 +410,7 @@ function PocketKuDashboard() {
       setIncomeStatusFilter('all');
       show(result.already_exists
         ? 'This forecast was already saved; no duplicate was created.'
-        : 'Expected income added to local D1. No account was credited.');
+        : 'Expected income added. No account was credited.');
       pendingExpectedCreation.current=null;
       form.reset();
     } catch(err) {
@@ -431,19 +437,29 @@ function PocketKuDashboard() {
   );
   const sectionHeading=(title:string,subtitle:string)=>(<div className="pk-section-head"><div><h1>{title}</h1><p>{subtitle}</p></div></div>);
   const pageOverview = ()=>(<>
-    {sectionHeading('Your money, organised.','Current D1 cash, actual reservations and planned commitments in one reliable view.')}
+    {sectionHeading('Your money, organised.','Your account balances, reservations and upcoming commitments in one place.')}
+    <SubscriptionDueBanner onOpen={()=>setTab('subscriptions')}/>
     <D1FinancialOverview key={month} mode="overview" monthIndex={month}
       onOpenMonthly={()=>setTab('monthly')} onOpenAccounts={()=>setTab('accounts')}/>
-    <details className="pk-card pk-f-legacy">
+    {SHOW_LEGACY_DEMOS && <details className="pk-card pk-f-legacy">
       <summary>What happened to the original browser-only dashboard?</summary>
       <p>The original example accounts and calculated totals are still in browser storage for the other unfinished demo sections. They are deliberately excluded from the D1 financial totals above to avoid double-counting.</p>
       <p>Shared payments, Mother's reminders and Settlements now use separate D1 modules. Only the Scenario simulator and older examples remain browser-only.</p>
-    </details>
+    </details>}
   </>);
   const pageMonthly=()=>(<>
-    {sectionHeading('Monthly allocations','Each allocation month prepares money for the following payment cycle.')}
-    <D1MonthlyPlanner key={month} monthIndex={month} />
-    <details className="pk-card"><summary style={{cursor:'pointer',fontWeight:700}}>Show original browser-only demo commitments (not synced to D1)</summary><div style={{marginTop:16}}>
+    {sectionHeading('Monthly allocations','Plan, reserve and track your commitments across months.')}
+    <div className="pk-plan-tabs" role="group" aria-label="Monthly plan views">
+      <button type="button" className={'pk-btn '+(monthlyView==='planner'?'pk-primary':'')} onClick={()=>setMonthlyView('planner')}>Monthly Planner</button>
+      <button type="button" className={'pk-btn '+(monthlyView==='timeline'?'pk-primary':'')} onClick={()=>setMonthlyView('timeline')}>Commitment Timeline</button>
+    </div>
+    {monthlyView==='planner'?<D1MonthlyPlanner key={month} monthIndex={month} />:
+      <D1CommitmentTimeline onOpenMonth={period=>{
+        const index=monthNames.findIndex((_,i)=>new Date(Date.UTC(2026,9+i,1)).toISOString().slice(0,7)===period);
+        if(index>=0){setMonth(index);setMonthlyView('planner')}
+        else show('This month is beyond the current picker range. Its commitment totals are still shown in Timeline.');
+      }}/>}
+    {SHOW_LEGACY_DEMOS && <details className="pk-card"><summary style={{cursor:'pointer',fontWeight:700}}>Show original browser-only demo commitments (not synced to D1)</summary><div style={{marginTop:16}}>
     <div className="pk-toolbar"><div className="pk-select-wrap"><label htmlFor="month-allocations">Allocation month</label><select id="month-allocations" className="pk-input" value={month} onChange={e=>{setMonth(+e.target.value);setEditing(null)}}>{monthNames.map((m,i)=><option key={m} value={i}>{m}</option>)}</select></div><button className="pk-btn pk-primary" onClick={()=>openEditor()}>+ Add commitment</button></div>
     <div className="pk-statgrid">{metric('Target',amount(target),`${monthlyBills.length} commitments`)}{metric('Reserved',amount(marked),'Item-level status')}{metric('Paid',amount(paid),'Recorded cash outflow')}{metric('To allocate',amount(Math.max(0,target-marked-paid)),'Unallocated item amounts')}</div>
     <div className="pk-receipt pk-full-receipt"><div className="pk-receipt-heading">✦ POCKETKU<br/><small>{monthNames[month].toUpperCase()} · ITEMISED RECEIPT</small></div>
@@ -455,20 +471,20 @@ function PocketKuDashboard() {
       </div>)}
       <div className="pk-rline pk-rbold"><span>MONTHLY TOTAL</span><strong>{amount(target)}</strong></div>
     </div>
-    <p className="pk-small-note">Payment status and money source are separate: assigning monthly funding does not create income. An individual reservation draws from that month's funding envelope when applicable. Instalment counters in the demonstration data are illustrative—check your provider statements.</p></div></details>
+    <p className="pk-small-note">Payment status and money source are separate: assigning monthly funding does not create income. An individual reservation draws from that month's funding envelope when applicable. Instalment counters in the demonstration data are illustrative—check your provider statements.</p></div></details>}
   </>);
   const pageAccounts=()=>(<>
-    {sectionHeading('My accounts & Tabung','Manage your D1 bank accounts, savings pots and transfers.')}
+    {sectionHeading('My accounts & Tabung','Manage your bank accounts, savings pots and transfers.')}
     <D1AccountsPreview refreshKey={d1Refresh} />
-    <details className="pk-card pk-f-legacy">
+    {SHOW_LEGACY_DEMOS && <details className="pk-card pk-f-legacy">
       <summary>Show legacy browser-demo account cards (not reliable for D1 totals)</summary>
       <p>This older display merges browser sample accounts with D1 account snapshots. Its combined totals are not authoritative. Use the D1 account panel above or the unified Overview for accurate D1 cash, reserved and available balances.</p>
     <div className="pk-statgrid">{metric('Cash total',amount(cash),'All known accounts')}{metric('Reserved',amount(reserved),'After avoiding double-counting')}{metric('Free cash',amount(cash-reserved),'After reservations')}{metric('Money locations',String(data.accounts.length),'Accounts and savings pots')}</div>
     <p className="pk-small-note">The four original bank/Tabung cards are sample browser data. D1 account starting amounts in these cards are their current D1 ledger balances; D1 transfers and D1 income confirmations persist; the new D1 Monthly Planner now supports D1 reservations and paid expenses. Other demonstration views remain browser-only. Do not enter real accounts or payments until we finish migration and secure login.</p>
     <div className="pk-account-grid">{data.accounts.map(a=><div className="pk-bank" key={a.id} style={{background:a.color}}><div className="pk-row"><span>{a.bank}</span><span>{a.protected?'♧ Protected':'◈ Bank account'}</span></div><div><strong>{amount(cashBalance(data,a.id))}</strong><div>{a.name}</div><small>{a.id.startsWith('d1-') ? 'D1 reserved and available: see database account panel above' : `Demo reserved ${amount(reservedBalance(data,a.id))} · available ${amount(freeBalance(data,a.id))}`}</small></div></div>)}</div>
-    </details>
-    <div className="pk-cols"><section className="pk-card"><h2>Add an account or Tabung — local D1</h2><p className="pk-muted">Saved to D1 and immediately shared with Money Sources. Transfers and confirmed income are saved in D1; D1 monthly bills now reserve and pay from D1; other demo modules remain browser-only.</p><form onSubmit={addAccount} className="pk-form pk-two"><label>Name<input className="pk-input" name="name" placeholder="BIMB" required/></label><label>Bank<input className="pk-input" name="bank" placeholder="Bank Islam" required/></label><label>Starting cash (RM)<input className="pk-input" type="number" min="0" step=".01" name="opening" defaultValue="0" required/></label><label>Account type<select className="pk-input" name="accountType"><option value="bank">Bank</option><option value="tabung">Tabung / savings pot</option></select></label><label>Protection<select className="pk-input" name="protected"><option value="no">Normal</option><option value="yes">Protected savings</option></select></label><button className="pk-btn pk-primary" type="submit" disabled={savingAccount}>{savingAccount ? "Saving to D1…" : "+ Save to D1"}</button></form></section>
-    <section className="pk-card"><h2>Transfer between D1 accounts</h2><p className="pk-muted">This form saves transfers to your local D1 ledger. Only accounts already created in D1 are shown.</p>
+    </details>}
+    <div className="pk-cols"><section className="pk-card"><h2>Add an account or Tabung</h2><p className="pk-muted">Add a bank account or savings pot. Opening cash is recorded only when the account is created.</p><form onSubmit={addAccount} className="pk-form pk-two"><label>Name<input className="pk-input" name="name" placeholder="BIMB" required/></label><label>Bank<input className="pk-input" name="bank" placeholder="Bank Islam" required/></label><label>Starting cash (RM)<input className="pk-input" type="number" min="0" step=".01" name="opening" defaultValue="0" required/></label><label>Account type<select className="pk-input" name="accountType"><option value="bank">Bank</option><option value="tabung">Tabung / savings pot</option></select></label><label>Protection<select className="pk-input" name="protected"><option value="no">Normal</option><option value="yes">Protected savings</option></select></label><button className="pk-btn pk-primary" type="submit" disabled={savingAccount}>{savingAccount ? "Saving…" : "+ Add account"}</button></form></section>
+    <section className="pk-card"><h2>Transfer between accounts</h2><p className="pk-muted">Move money between your saved accounts. Transfers do not change your total cash.</p>
     <form onSubmit={transfer} className="pk-form pk-two">
       <label>From<select className="pk-input" name="from" required defaultValue={data.accounts.find(a=>a.id.startsWith('d1-'))?.id||''}>
         {data.accounts.filter(a=>a.id.startsWith('d1-')).map(a=><option key={a.id} value={a.id}>{a.name}{a.protected?' · Protected':''}</option>)}
@@ -478,24 +494,24 @@ function PocketKuDashboard() {
       </select></label>
       <label>Amount (RM)<input className="pk-input" name="amount" type="number" min=".01" step=".01" required/></label>
       <label>Optional note<input className="pk-input" name="note" maxLength={200} placeholder="D1 transfer test"/></label>
-      <button className="pk-btn pk-primary" type="submit" disabled={savingTransfer || data.accounts.filter(a=>a.id.startsWith('d1-')).length<2}>{savingTransfer?'Saving transfer…':'Record transfer in D1'}</button>
-    </form><p className="pk-muted">Transfers do not increase total cash. D1 reservations are protected by the backend; browser-only demonstration reservations are not synced. Use fictional test amounts.</p></section></div>
+      <button className="pk-btn pk-primary" type="submit" disabled={savingTransfer || data.accounts.filter(a=>a.id.startsWith('d1-')).length<2}>{savingTransfer?'Saving transfer…':'Record transfer'}</button>
+    </form><p className="pk-muted">Transfers do not increase your combined cash balance.</p></section></div>
   </>);
   const pageFunding = ()=>(<>
-    {sectionHeading('Money sources','See each bank contribution by month, without mixing in the old browser-only demo.')}
+    {sectionHeading('Money sources','See which accounts are funding your monthly commitments.')}
     <D1FinancialOverview key={month} mode="funding" monthIndex={month}
       onOpenMonthly={()=>setTab('monthly')} onOpenAccounts={()=>setTab('accounts')}/>
-    <details className="pk-card pk-f-legacy">
+    {SHOW_LEGACY_DEMOS && <details className="pk-card pk-f-legacy">
       <summary>Show original browser-only funding records (read-only)</summary>
       <p>These old sample records are NOT D1 reservations or payments. They are kept for reference only; create new funding assignments from the Monthly Plan instead.</p>
       {data.funding.filter(f=>f.month===month).length===0 ? <p>No browser-only funding entries for this month.</p> :
         data.funding.filter(f=>f.month===month).map(f=><div className="pk-simple-row" key={f.id}>
           <span>{accountName(f.accountId)}</span><strong>{amount(f.amountCents)}</strong>
         </div>)}
-    </details>
+    </details>}
   </>);
   const pageIncome=()=>(<>
-    {sectionHeading('Money coming in','Plan expected income by month, then confirm receipt to the correct D1 account.')}
+    {sectionHeading('Money coming in','Plan expected income and confirm payments when they arrive.')}
     <p className="pk-small-note"><b>Expected income.</b> A forecast is not cash until you confirm receipt. Changing an estimate never credits a bank account.</p>
     <section className="pk-card">
       <h2>+ New expected income</h2>
@@ -522,7 +538,7 @@ function PocketKuDashboard() {
         <label>Expected amount (RM)<input name="expected_amount" className="pk-input" type="number" step=".01" min="0" placeholder="Leave blank if unknown"/></label>
         <label>Estimated receipt date (optional)<input name="expected_date" className="pk-input" type="date"/></label>
         <div style={{display:'flex',alignItems:'end'}}><button className="pk-btn pk-primary" type="submit" disabled={creatingExpectedIncome||loadingIncome}>
-          {creatingExpectedIncome?'Saving to D1…':'+ Save expected income'}
+          {creatingExpectedIncome?'Saving…':'+ Save expected income'}
         </button></div>
       </form>
       <p className="pk-small-note">This creates only an expected-income record. Your actual and available balances are unchanged. Avoid entering the same expected payment twice.</p>
@@ -584,7 +600,7 @@ function PocketKuDashboard() {
                 {candidates.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
               </select></label>
               <button type="submit" className="pk-btn pk-primary" disabled={confirmingIncome!==null||savingExpectedKey!==null||candidates.length===0}>
-                {confirmingIncome===receipt.income_key?'Confirming in D1…':'✓ Mark received in D1'}
+                {confirmingIncome===receipt.income_key?'Confirming in D1…':'✓ Mark received'}
               </button>
             </form>}
           </>}
@@ -596,41 +612,41 @@ function PocketKuDashboard() {
       <div className="pk-simple-row"><span>Expected</span><b>No bank change</b></div>
       <div className="pk-simple-row"><span>Edit estimate</span><b>Changes forecast only</b></div>
       <div className="pk-simple-row"><span>Received</span><b>Credits selected D1 bank once</b></div>
-      <p className="pk-small-note">This application is still a local testing prototype. Old browser-only demonstration data remains separate from D1. Do not enter real financial information or deploy publicly before authentication.</p>
+      <p className="pk-small-note">Only confirm income after it has actually arrived. An expected payment does not increase your bank balance.</p>
     </section>
-    {data.income.length>0 && <section className="pk-card"><h2>Older browser-only demo receipts</h2>
+    {SHOW_LEGACY_DEMOS && data.income.length>0 && <section className="pk-card"><h2>Older browser-only demo receipts</h2>
       <p className="pk-muted">Separate test entries saved in your browser, not D1 income. Shown read-only.</p>
       {data.income.map(x=><div className="pk-simple-row" key={x.id}><span>{x.name}<small>{accountName(x.accountId)}</small></span><b>{amount(x.amountCents)}</b></div>)}
     </section>}
   </>);
   const pageSettlements=()=>(<>
-    {sectionHeading('Settlements & debt tracking','Outstanding balances and repayments saved in local D1.')}
+    {sectionHeading('Settlements & debt tracking','Track outstanding balances and repayment progress.')}
     <D1Debts />
-    <details className="pk-card pk-f-legacy">
+    {SHOW_LEGACY_DEMOS && <details className="pk-card pk-f-legacy">
       <summary>Show original browser-only settlement estimates (not D1)</summary>
       <p>This older provisional list is separate from the debt tracker above. These figures are not automatically imported or linked to your real bank ledger. Do not treat demo Paid statuses as real payments.</p>
       {data.settlements.map(s=><div className="pk-simple-row" key={s.id}><span>{s.name}</span><strong>{amount(s.amountCents)}</strong></div>)}
       <p className="pk-small-note">Confirm your provider's final settlement quote before making any actual payment.</p>
-    </details>
+    </details>}
   </>);
   const pageShared=()=>(<>
-    {sectionHeading('Shared payments','Subscription contributions from friends and family, saved separately in local D1.')}
+    {sectionHeading('Shared payments','Track subscription contributions from friends and family.')}
     <D1SharedPayments monthIndex={month}/>
-    <details className="pk-card pk-f-legacy"><summary>Old browser-only shared payment examples</summary>
+    {SHOW_LEGACY_DEMOS && <details className="pk-card pk-f-legacy"><summary>Old browser-only shared payment examples</summary>
       <p>These are separate examples, not imported into D1. Do not add them to collected totals.</p>
       {data.shared.map(s=><div key={s.id} className="pk-simple-row"><span>{s.name} · {s.month}</span><b>{s.members.length} members</b></div>)}
-    </details>
+    </details>}
   </>);
   const pageMother=()=>(<>
-    {sectionHeading("Mother's reminders",'Monthly and yearly checklists, independent of your PocketKu bank accounts.')}
+    {sectionHeading('Family reminders','Monthly and yearly payment checklists for family members.')}
     <D1FamilyReminders key={month} monthIndex={month}/>
-    <details className="pk-card pk-f-legacy"><summary>Old browser-only reminder examples</summary>
+    {SHOW_LEGACY_DEMOS && <details className="pk-card pk-f-legacy"><summary>Old browser-only reminder examples</summary>
       <p>Separate demonstration records. They have not been copied to D1.</p>
       {data.reminders.map(r=><div className="pk-simple-row" key={r.id}><span>{r.name} · {r.date}</span><b>{amount(r.amountCents)}</b></div>)}
-    </details>
+    </details>}
   </>);
   const pageScenario=()=>(<>
-    {sectionHeading('Scenarios','Planning simulations will use your private D1 records in a future update.')}
+    {sectionHeading('Scenarios','Explore future finances.')}
     <section className="pk-card"><h2>No public sample figures</h2>
       <p>Personal financial assumptions have been removed from the source code to keep the repository safe to publish.</p>
       <p>Your existing income, commitments and funding records remain in the local D1 database.</p>
@@ -642,19 +658,23 @@ function PocketKuDashboard() {
       <nav aria-label="PocketKu navigation">{tabs.map(([id,label,icon])=><button className={'pk-nav-item '+(tab===id?'selected':'')} key={id} onClick={()=>{setTab(id);setEditing(null);setNotice('')}}><span className="pk-nav-icon">{icon}</span><span>{label}</span></button>)}</nav>
       <div className="pk-sidebar-footer"><span className="pk-demo-dot"/>Private workspace<br/><small>Login protected</small></div>
     </aside><div className="pk-body"><header className="pk-top"><div><span className="pk-top-small">POCKETKU / PERSONAL FINANCE</span><strong>{tabs.find(x=>x[0]===tab)?.[1]}</strong></div><div className="pk-top-actions"><span className="pk-top-tag">● Private session</span><button className="pk-btn" onClick={async()=>{try{await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'})}finally{window.location.reload()}}}>Sign out</button><button className="pk-btn" onClick={()=>setTheme(theme==='light'?'dark':'light')}>{theme==='light'?'☾ Dark mode':'☀ Light mode'}</button></div></header>
-      <main className="pk-main"><div className="pk-warning"><b>Private PocketKu workspace.</b> Your financial records are stored in D1; older browser-only examples are not included in D1 totals. Login is enabled, but security testing and deployment preparation are still required before handling real financial records.</div>
+      <main className="pk-main">
         {notice&&<div className="pk-notice" role="status"><span>{notice}</span><button onClick={()=>setNotice('')} aria-label="Dismiss notification">×</button></div>}
         {(tab==='overview'||tab==='monthly'||tab==='funding'||tab==='shared'||tab==='mother')&&<div className="pk-f-monthpicker">
           <label htmlFor="pk-d1-main-month">{tab==='shared'||tab==='mother'?'View month':'Allocation month'}
-            <select id="pk-d1-main-month" className="pk-input" value={month}
-              onChange={e=>{setMonth(Number(e.target.value));setEditing(null)}}>
-              {monthNames.map((label,i)=><option value={i} key={label}>{label}</option>)}
-            </select>
+            <span className="pk-month-controls">
+              <button className="pk-btn pk-month-arrow" type="button" aria-label="Previous month" disabled={month<=0} onClick={()=>setMonth(x=>Math.max(0,x-1))}>‹</button>
+              <select id="pk-d1-main-month" className="pk-input" value={month}
+                onChange={e=>{setMonth(Number(e.target.value));setEditing(null)}}>
+                {monthNames.map((label,i)=><option value={i} key={label}>{label}</option>)}
+              </select>
+              <button className="pk-btn pk-month-arrow" type="button" aria-label="Next month" disabled={month>=monthNames.length-1} onClick={()=>setMonth(x=>Math.min(monthNames.length-1,x+1))}>›</button>
+            </span>
           </label>
-          <span>{tab==='shared'?'New collections use this month. You can also select any previously saved collection.':tab==='mother'?'Show reminders due in this month. Each recurring due date has its own Paid status.':'Choose a month to see its commitments and funding. Cash and reserved balances always reflect all months.'}</span>
+          <span>{tab==='shared'?'Choose a month for subscription collections.':tab==='mother'?'Show reminders due in the selected month.':'View planned commitments and funding for the selected month.'}</span>
         </div>}
-        {tab==='overview'&&pageOverview()}{tab==='monthly'&&pageMonthly()}{tab==='accounts'&&pageAccounts()}{tab==='funding'&&pageFunding()}{tab==='income'&&pageIncome()}{tab==='settlements'&&pageSettlements()}{tab==='shared'&&pageShared()}{tab==='mother'&&pageMother()}{tab==='scenario'&&pageScenario()}{tab==='safety'&&<D1DataSafety/>}
-        <footer className="pk-footer"><span>POCKETKU · A DEKALATHON PROJECT</span><div><button className="pk-link" onClick={exportDemo}>Export browser demo JSON (not D1)</button><button className="pk-link" onClick={()=>{if(window.confirm('Reset PocketKu to its original demo data? This clears all demo edits saved in this browser.')){setData(createDemoData());setNotice('Demo reset.')}}}>Reset demo</button></div></footer>
+        {tab==='overview'&&pageOverview()}{tab==='monthly'&&pageMonthly()}{tab==='accounts'&&pageAccounts()}{tab==='funding'&&pageFunding()}{tab==='income'&&pageIncome()}{tab==='settlements'&&pageSettlements()}{tab==='shared'&&pageShared()}{tab==='subscriptions'&&<D1PersonalSubscriptions/>}{tab==='mother'&&pageMother()}{SHOW_LEGACY_DEMOS && tab==='scenario'&&pageScenario()}{tab==='safety'&&<D1DataSafety/>}
+        <footer className="pk-footer"><span>POCKETKU · A DEKALATHON PROJECT</span>{SHOW_LEGACY_DEMOS && <div><button className="pk-link" onClick={exportDemo}>Export browser demo JSON (not D1)</button><button className="pk-link" onClick={()=>{if(window.confirm('Reset PocketKu to its original demo data? This clears all demo edits saved in this browser.')){setData(createDemoData());setNotice('Demo reset.')}}}>Reset demo</button></div>}</footer>
       </main></div></div>
     {editing!==null&&<div className="pk-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setEditing(null)}}><div className="pk-modal" role="dialog" aria-modal="true" aria-label={editing==='new'?'Add commitment':'Edit commitment'}><div className="pk-row"><h2>{editing==='new'?'New commitment':'Edit allocation details'}</h2><button className="pk-btn" onClick={()=>setEditing(null)} aria-label="Close editor">×</button></div>
       <form className="pk-form" onSubmit={saveEditor}><div className="pk-two"><label>Name<input className="pk-input" required value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label>Amount (RM)<input className="pk-input" required type="number" min="0" step=".01" value={draft.amount} onChange={e=>setDraft({...draft,amount:e.target.value})}/></label><label>Category<select className="pk-input" value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}>{['Bill','Subscription','Financing','Personal repayment','SPayLater','Mobile','Other'].map(x=><option key={x}>{x}</option>)}</select></label><label>Actual due date (optional)<input className="pk-input" type="date" value={draft.dueDate} onChange={e=>setDraft({...draft,dueDate:e.target.value})}/></label><label>Current instalment<input className="pk-input" type="number" min="0" value={draft.seq} onChange={e=>setDraft({...draft,seq:e.target.value})}/></label><label>Total instalments<input className="pk-input" type="number" min="0" value={draft.total} onChange={e=>setDraft({...draft,total:e.target.value})}/></label></div>
